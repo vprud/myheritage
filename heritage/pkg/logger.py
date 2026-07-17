@@ -9,7 +9,8 @@ class BusinessLogger:
 
         self.handler = logging.StreamHandler()
         self.formatter = logging.Formatter(
-            '{"time": "%(asctime)s", "name": "%(name)s", "level": "%(levelname)s", "message": %(message)s}'
+            '{"time": "%(asctime)s", "name": "%(name)s",'
+            ' "level": "%(levelname)s", "message": %(message)s}'
         )
 
         self.handler.setFormatter(self.formatter)

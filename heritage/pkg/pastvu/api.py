@@ -1,9 +1,7 @@
-from typing import List, Tuple
-
-import orjson
 import httpx
+import orjson
 
-from heritage.pkg.pastvu.model import GeoPoint, Photo, Params
+from heritage.pkg.pastvu.model import GeoPoint, Params, Photo
 
 
 class PastvuAPI:
@@ -11,7 +9,7 @@ class PastvuAPI:
         self._base_url = "https://pastvu.com/api2"
         self._image_url = "https://pastvu.com/_p/d/{0}"
 
-    def get_photo_info(self, cid: str) -> Tuple[str, str]:
+    def get_photo_info(self, cid: str) -> tuple[str, str]:
         r = httpx.get(
             self._base_url,
             params={
@@ -26,12 +24,12 @@ class PastvuAPI:
         r = httpx.get(self._image_url.format(file))
         return r.content
 
-    def get_nearest_photos(self, params: Params) -> List[Photo]:
+    def get_nearest_photos(self, params: Params) -> list[Photo]:
         r = httpx.get(
             self._base_url,
             params={
                 "method": "photo.giveNearestPhotos",
-                "params": params.json(models_as_dict=False),
+                "params": params.to_api_params(),
             },
         )
 

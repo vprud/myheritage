@@ -1,4 +1,4 @@
-from dataclasses import field, dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -7,9 +7,7 @@ class MediaPhoto:
     title: str
     period: str
     caption: str = field(init=False)
-    period_symbs: set = field(
-        default_factory=lambda: set(["-", "–", "—", "‒", "―", "⸺", "⸻"])
-    )
+    period_symbs: set = field(default_factory=lambda: set(["-", "–", "—", "‒", "―", "⸺", "⸻"]))
 
     def prep_period(self) -> str:
         if any((symb in self.period_symbs) for symb in self.period):

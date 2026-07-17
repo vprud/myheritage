@@ -1,21 +1,17 @@
-from typing import List
-
-from heritage.exc import NoPhotos
 from heritage.entity import MediaPhoto
-from heritage.pkg import Params, PastvuAPI, GeoPoint
+from heritage.exc import NoPhotos
+from heritage.pkg import GeoPoint, Params, PastvuAPI
 
 
 class MediaGroupUseCase:
     def __init__(self, api: PastvuAPI) -> None:
         self.api = api
 
-    def get_photos(
-        self, latitude: float, longitude: float, page: int = 0
-    ) -> List[MediaPhoto]:
+    def get_photos(self, latitude: float, longitude: float, page: int = 0) -> list[MediaPhoto]:
         parapms = Params(
             geo=GeoPoint(
                 latitude=latitude,
-                longitude=longitude
+                longitude=longitude,
             )
         ).set_pagination(page)
         group = []

@@ -3,14 +3,13 @@ import json
 import traceback
 
 import httpx
-
-from telegram.constants import ParseMode
 from telegram import (
-    Update,
-    KeyboardButton,
     InputMediaPhoto,
+    KeyboardButton,
     ReplyKeyboardMarkup,
+    Update,
 )
+from telegram.constants import ParseMode
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -20,22 +19,21 @@ from telegram.ext import (
 )
 
 from heritage.cfg import Settings
-from heritage.pkg import PastvuAPI, BusinessLogger
 from heritage.dto import SearchState
-from heritage.exc import NoPhotos
-from heritage.usecase import MediaGroupUseCase
 from heritage.entity import (
-    UserStep,
-    SEND_GEOPOSITION,
-    MORE_PHOTO,
-    START_MSG,
     INFO_MSG,
+    MORE_PHOTO,
     NEED_SEND_GEO_MSG,
-    NO_PHOTOS_MSG,
     NO_MORE_PHOTOS_MSG,
+    NO_PHOTOS_MSG,
+    SEND_GEOPOSITION,
     SOME_ERROR_MSG,
+    START_MSG,
+    UserStep,
 )
-
+from heritage.exc import NoPhotos
+from heritage.pkg import BusinessLogger, PastvuAPI
+from heritage.usecase import MediaGroupUseCase
 
 api = PastvuAPI()
 settings = Settings()
@@ -49,18 +47,18 @@ keyboard = [
 reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 
-async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Log the error and send a telegram message to notify the developer."""
+    username = None
+    if isinstance(update, Update) and update.effective_user is not None:
+        username = update.effective_user.username
+
     # Log the error before we do anything else, so we can see it even if something breaks.
-    logger.logger.error(
-        f'{{"username": "{update.effective_user.username}", "exception": "{context.error}"}}'
-    )
+    logger.logger.error(f'{{"username": "{username}", "exception": "{context.error}"}}')
 
     # traceback.format_exception returns the usual python message about an exception, but as a
     # list of strings rather than a single string, so we have to join them together.
-    tb_list = traceback.format_exception(
-        None, context.error, context.error.__traceback__
-    )
+    tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
     tb_string = "".join(tb_list)
 
     # Build the message with some markup and additional information about what happened.
@@ -114,14 +112,12 @@ async def hand_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             step=UserStep.GET_MORE,
             case="Correct message.text",
             username=username,
-            state=state.dict(),
+            state=state.to_dict(),
         )
         await update.message.reply_media_group(
             media=[
                 InputMediaPhoto(photo.file, caption=photo.caption)
-                for photo in use_case.get_photos(
-                    state.latitude, state.longitude, state.page
-                )
+                for photo in use_case.get_photos(state.latitude, state.longitude, state.page)
             ]
         )
         state.shift()
@@ -129,7 +125,7 @@ async def hand_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             step=UserStep.GET_MORE,
             case="Successfully sent",
             username=username,
-            state=state.dict(),
+            state=state.to_dict(),
         )
     except NoPhotos:
         await update.message.reply_text(NO_MORE_PHOTOS_MSG)
@@ -137,7 +133,7 @@ async def hand_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             step=UserStep.GET_MORE,
             case="No photos",
             username=username,
-            state=state.dict(),
+            state=state.to_dict(),
         )
     except KeyError:
         await update.message.reply_text(NEED_SEND_GEO_MSG)
@@ -145,7 +141,7 @@ async def hand_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             step=UserStep.GET_MORE,
             case="No state",
             username=username,
-            state=state.dict(),
+            state=state.to_dict(),
         )
     except httpx.ReadTimeout:
         await update.message.reply_text(SOME_ERROR_MSG)
@@ -153,7 +149,7 @@ async def hand_text_input(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             step=UserStep.GET_MORE,
             case="ReadTimeout",
             username=username,
-            state=state.dict(),
+            state=state.to_dict(),
         )
 
 
@@ -209,16 +205,12 @@ def main() -> None:
     application.add_handler(CommandHandler("help", help_command))
 
     # main logic
-    application.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND, hand_text_input)
-    )
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, hand_text_input))
 
-    application.add_handler(
-        MessageHandler(filters.LOCATION & ~filters.COMMAND, get_photos)
-    )
+    application.add_handler(MessageHandler(filters.LOCATION & ~filters.COMMAND, get_photos))
 
     # error handler
-    application.add_error_handler(error_handler)  # type: ignore
+    application.add_error_handler(error_handler)
 
     application.run_polling()
 

@@ -1,24 +1,26 @@
-FROM python:3.10-bullseye
+FROM python:3.14-slim-bookworm
 
-RUN mkdir /app
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
 WORKDIR /app
 
 RUN groupadd -r web && useradd -d /app -g web web \
     && chown web:web -R /app
 
-RUN pip install "poetry==1.2.2"
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PROJECT_ENVIRONMENT=/app/.venv
 
-COPY pyproject.toml poetry.lock ./
-RUN poetry export -f requirements.txt --without dev --output /app/requirements.txt
-
-RUN pip install --upgrade pip setuptools wheel \ 
-    && pip install --no-cache -r /app/requirements.txt
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
 
 COPY ./heritage ./heritage
-RUN poetry build && pip install dist/*.whl
+RUN uv sync --frozen --no-dev
+
+ENV PATH="/app/.venv/bin:$PATH"
 
 EXPOSE 8000
 
 USER web
 
-CMD python -m heritage
+CMD ["python", "-m", "heritage"]

@@ -1,10 +1,5 @@
 import orjson
 from pydantic import BaseModel
-from typing import TypeVar
-
-def orjson_dumps(v, *, default):
-    # orjson.dumps returns bytes, to match standard json.dumps we need to decode
-    return orjson.dumps(v, default=default).decode()
 
 
 class GeoPoint(BaseModel):
@@ -27,13 +22,16 @@ class Params(BaseModel):
     limit: int = 5
     skip: int = 0
 
-    def set_pagination(self, page: int = 0):
+    def set_pagination(self, page: int = 0) -> Params:
         self.skip = page * self.limit
         return self
 
-    class Config:
-        json_loads = orjson.loads
-        json_dumps = orjson_dumps
-        json_encoders = {
-            GeoPoint: lambda g: [g.latitude, g.longitude],
+    def to_api_params(self) -> str:
+        """Serialize params for Pastvu API (geo as [lat, lon])."""
+        payload = {
+            "geo": [self.geo.latitude, self.geo.longitude],
+            "distance": self.distance,
+            "limit": self.limit,
+            "skip": self.skip,
         }
+        return orjson.dumps(payload).decode()

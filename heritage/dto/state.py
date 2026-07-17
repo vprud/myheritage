@@ -1,4 +1,5 @@
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
+
 import orjson
 
 
@@ -11,7 +12,7 @@ class SearchState:
     def __str__(self) -> str:
         return orjson.dumps(self).decode("utf-8")
 
-    def dict(self) -> dict:
+    def to_dict(self) -> dict[str, float | int]:
         return asdict(self)
 
     def shift(self) -> None:

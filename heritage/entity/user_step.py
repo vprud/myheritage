@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class UserStep(str, Enum):
+class UserStep(StrEnum):
     START = "Start"
     HELP = "Get help"
     GET = "Get photos"
