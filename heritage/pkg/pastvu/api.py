@@ -6,8 +6,8 @@ from heritage.pkg.pastvu.model import GeoPoint, Params, Photo
 
 class PastvuAPI:
     def __init__(self) -> None:
-        self._base_url = "https://pastvu.com/api2"
-        self._image_url = "https://pastvu.com/_p/d/{0}"
+        self._base_url = "https://api.pastvu.com/api2"
+        self._image_url = "https://img.pastvu.com/d/{0}"
 
     def get_photo_info(self, cid: str) -> tuple[str, str]:
         r = httpx.get(
